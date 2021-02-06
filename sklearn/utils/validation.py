@@ -525,6 +525,7 @@ def check_array(array, accept_sparse=False, *, accept_large_sparse=True,
             elif dtype_iter.name.startswith(("Int", "UInt")):
                 # name looks like an Integer Extension Array, now check for
                 # the dtype
+                int_columns_indexes = []
                 with suppress(ImportError):
                     from pandas import (Int8Dtype, Int16Dtype,
                                         Int32Dtype, Int64Dtype,
@@ -534,6 +535,7 @@ def check_array(array, accept_sparse=False, *, accept_large_sparse=True,
                                                Int32Dtype, Int64Dtype,
                                                UInt8Dtype, UInt16Dtype,
                                                UInt32Dtype, UInt64Dtype)):
+                        int_columns_indexes.append(i)
                         has_pd_integer_array = True
 
         if all(isinstance(dtype, np.dtype) for dtype in dtypes_orig):
@@ -556,8 +558,10 @@ def check_array(array, accept_sparse=False, *, accept_large_sparse=True,
             dtype = dtype[0]
 
     if has_pd_integer_array:
-        # If there are any pandas integer extension arrays,
-        array = array.astype(dtype)
+        # If there are any pandas integer extension arrays
+        for i in int_columns_indexes:
+            name = array.columns[i]
+            array.loc[:, i] = array[name].astype(dtype)
 
     if force_all_finite not in (True, False, 'allow-nan'):
         raise ValueError('force_all_finite should be a bool or "allow-nan"'
